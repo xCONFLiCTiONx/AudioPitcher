@@ -1,0 +1,320 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <script>
+    // Spanish-speaking browsers go to /es/ unless the visitor picked a language
+    try {
+      if (!localStorage.getItem('lang') && (navigator.languages || [navigator.language])[0].toLowerCase().startsWith('es'))
+        location.replace('/es/' + location.hash);
+    } catch (e) {}
+  </script>
+  <title>Audio Pitcher: change the pitch of any Windows app in real time</title>
+  <meta name="description" content="Free app to raise or lower the pitch of Spotify, YouTube, Discord or games while they play, without changing the speed. For Windows 10 and 11.">
+  <link rel="canonical" href="https://audiopitcher.app/">
+  <link rel="alternate" hreflang="en" href="https://audiopitcher.app/">
+  <link rel="alternate" hreflang="es" href="https://audiopitcher.app/es/">
+  <link rel="alternate" hreflang="x-default" href="https://audiopitcher.app/">
+  <meta name="theme-color" content="#000000">
+
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="Audio Pitcher">
+  <meta property="og:title" content="Audio Pitcher: change the pitch of any Windows app">
+  <meta property="og:description" content="Shift the pitch of whatever plays on your PC, in real time. Free and open source.">
+  <meta property="og:url" content="https://audiopitcher.app/">
+  <meta property="og:image" content="https://audiopitcher.app/img/og.png">
+  <meta property="og:locale" content="en_US">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:image" content="https://audiopitcher.app/img/og.png">
+
+  <link rel="icon" href="/favicon.ico" sizes="48x48">
+  <link rel="icon" type="image/png" sizes="96x96" href="/favicon-96.png">
+  <link rel="icon" type="image/png" sizes="192x192" href="/favicon-192.png">
+  <link rel="apple-touch-icon" href="/apple-touch-icon.png">
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <script src="https://unpkg.com/@phosphor-icons/web@2.1.1" defer></script>
+  <link rel="stylesheet" href="/styles.css">
+  <script src="/analytics.js"></script>
+
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "SoftwareApplication",
+    "name": "Audio Pitcher",
+    "operatingSystem": "Windows 10, Windows 11",
+    "applicationCategory": "MultimediaApplication",
+    "softwareVersion": "1.3.1",
+    "license": "https://www.gnu.org/licenses/gpl-3.0.html",
+    "downloadUrl": "https://github.com/Bombaxz/audio-pitcher/releases/latest/download/AudioPitcher-Setup.exe",
+    "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" },
+    "image": "https://audiopitcher.app/img/app.png",
+    "description": "Change the pitch of any Windows app's audio in real time."
+  }
+  </script>
+  <script type="application/ld+json">
+  { "@context": "https://schema.org", "@type": "WebSite", "name": "Audio Pitcher", "url": "https://audiopitcher.app/", "inLanguage": "en" }
+  </script>
+</head>
+<body>
+  <a class="skip" href="#main">Skip to content</a>
+
+  <header class="topbar">
+    <div class="topbar-inner">
+      <a class="brand" href="/" aria-label="Audio Pitcher, home">
+        <img src="/img/logo.svg" alt="" width="32" height="32">
+        <span>Audio Pitcher</span>
+      </a>
+      <nav aria-label="Main">
+        <a href="#features">Features</a>
+        <a href="#customize">Make it yours</a>
+        <a href="#faq">FAQ</a>
+        <a href="#support" class="nav-support"><i class="ph ph-heart"></i> Support</a>
+        <a href="https://github.com/Bombaxz/audio-pitcher" rel="noopener" aria-label="Source code on GitHub"><i class="ph ph-github-logo"></i></a>
+        <a class="lang" href="/es/" hreflang="es" lang="es" data-lang="es" aria-label="Ver en español">ES</a>
+        <a class="btn btn-sm" href="https://github.com/Bombaxz/audio-pitcher/releases/latest/download/AudioPitcher-Setup.exe" data-download="nav">Download</a>
+      </nav>
+    </div>
+  </header>
+
+  <main id="main">
+
+    <section class="hero">
+      <div class="hero-copy">
+        <h1 class="wordmark reveal">Audio Pitcher</h1>
+        <p class="hero-sub reveal">Change the pitch of<br> any Windows app</p>
+        <p class="lead reveal">Shift Spotify, YouTube, Discord or a game up or down while it plays, in real time and without changing the speed. And the window, your way: your own background image, glass controls and your colors.</p>
+        <div class="cta reveal">
+          <a class="btn" href="https://github.com/Bombaxz/audio-pitcher/releases/latest/download/AudioPitcher-Setup.exe" data-download="hero">
+            <i class="ph ph-windows-logo"></i> Download Audio Pitcher
+          </a>
+          <p class="meta">Free · Windows 10 and 11 · Restart required after the first install</p>
+        </div>
+      </div>
+      <img class="hero-logo reveal" src="/img/logo.svg" alt="Audio Pitcher logo" width="360" height="360">
+    </section>
+
+    <section class="showcase">
+      <div class="stage reveal">
+        <video class="demo" src="/img/demo-pitch.mp4" poster="/img/demo-pitch.jpg" width="290" height="341"
+               autoplay muted loop playsinline aria-label="Audio Pitcher raising and lowering the pitch"></video>
+      </div>
+    </section>
+
+    <section class="tagline" aria-label="Tagline">
+      <p class="words">A pitch knob for everything that plays on your PC.</p>
+    </section>
+
+    <section class="section band" id="features">
+      <h2 class="reveal">Everything you need, nothing more</h2>
+      <div class="tiles">
+        <article class="tile reveal">
+          <div class="shot" style="--y: 16.1%"><div class="frame"><video src="/img/demo-apps.mp4" poster="/img/demo-apps.jpg" autoplay muted loop playsinline
+                 aria-label="Switching between Spotify, Discord and other apps with different pitch"></video></div></div>
+          <h3>Only the app you pick</h3>
+          <p>Each app gets its own pitch. Shift Spotify while Discord sounds normal, or apply it to the whole system.</p>
+        </article>
+        <article class="tile reveal">
+          <div class="shot" style="--y: 33.2%"><div class="frame"><video src="/img/demo-pitch.mp4" poster="/img/demo-pitch.jpg" autoplay muted loop playsinline
+                 aria-label="Moving the pitch control up and down"></video></div></div>
+          <h3>Pitch in semitones</h3>
+          <p>Up to 12 semitones up or down without changing the speed.</p>
+        </article>
+        <article class="tile reveal">
+          <div class="shot" style="--y: 44.3%"><div class="frame"><video src="/img/demo-themes.mp4" poster="/img/demo-themes.jpg" autoplay muted loop playsinline
+                 aria-label="Switching between the app themes"></video></div></div>
+          <h3>Light, dark or in between</h3>
+          <p>Five themes, text that adapts on its own, and the contrast you want.</p>
+        </article>
+        <article class="tile reveal">
+          <div class="shot" style="--y: 61.6%"><div class="frame"><video src="/img/demo-fx.mp4" poster="/img/demo-fx.jpg" autoplay muted loop playsinline
+                 aria-label="Opening the effects panel and turning the knobs"></video></div></div>
+          <h3>Reverb, delay and chorus</h3>
+          <p>Simple effects with knobs you understand at a glance.</p>
+        </article>
+        <article class="tile reveal">
+          <div class="shot" style="--y: 55.8%"><div class="frame"><video src="/img/demo-rec.mp4" poster="/img/demo-rec.jpg" autoplay muted loop playsinline
+                 aria-label="Recording audio, trimming it and previewing before saving"></video></div></div>
+          <h3>Record what plays</h3>
+          <p>Record your PC audio, trim it, preview it before saving and export it as WAV.</p>
+        </article>
+        <article class="tile reveal">
+          <a class="shot" style="--y: 0%" href="https://github.com/Bombaxz/audio-pitcher" rel="noopener"><div class="frame"><img src="/img/github.png" alt="Audio Pitcher repository on GitHub with the GPL 3.0 license" width="300" height="330" loading="lazy"></div></a>
+          <h3>Free and open source</h3>
+          <p>No account, no paid version and no ads inside the app. Code under GPL&nbsp;3.0 on GitHub. Windows 10 and 11.</p>
+        </article>
+      </div>
+    </section>
+
+    <section class="section" id="customize">
+      <h2 class="reveal">Make it yours</h2>
+      <p class="intro reveal">Put your own image behind the controls and pick the colors. The window ends up looking like something you chose, not something you installed.</p>
+      <div class="tiles">
+        <article class="tile reveal">
+          <div class="shot" style="--y: 40.7%"><div class="frame"><video src="/img/demo-image.mp4" poster="/img/demo-image.jpg" autoplay muted loop playsinline
+                 aria-label="Picking a background image from the gallery"></video></div></div>
+          <h3>Your image as the background</h3>
+          <p>Any photo or drawing. The app blurs it, keeps it in a gallery and lets you set how much of it shows.</p>
+        </article>
+        <article class="tile reveal">
+          <div class="shot" style="--y: 8.2%"><div class="frame"><video src="/img/demo-glass.mp4" poster="/img/demo-glass.jpg" autoplay muted loop playsinline
+                 aria-label="Glass controls over the background image"></video></div></div>
+          <h3>Glass controls</h3>
+          <p>With an image set, every control lets the background through, with a thin edge of light.</p>
+        </article>
+        <article class="tile reveal">
+          <div class="shot" style="--y: 8.3%"><div class="frame"><video src="/img/demo-colors.mp4" poster="/img/demo-colors.jpg" autoplay muted loop playsinline
+                 aria-label="Switching accents between soft and vivid, turning the hue and changing to the light theme"></video></div></div>
+          <h3>Soft or vivid colors</h3>
+          <p>Choose how strong the accents are, turn the hue with the real colors in view, and the text adapts to light or dark images on its own.</p>
+        </article>
+      </div>
+    </section>
+
+    <section class="section band" id="uses">
+      <h2 class="reveal">What people use it for</h2>
+      <ul class="uses">
+        <li class="reveal"><i class="ph ph-guitar"></i> Practicing a song in your instrument's key</li>
+        <li class="reveal"><i class="ph ph-microphone-stage"></i> Singing or karaoke in your vocal range</li>
+        <li class="reveal"><i class="ph ph-headphones"></i> Hearing familiar music in a new color</li>
+        <li class="reveal"><i class="ph ph-video-camera"></i> Preparing audio for videos and streams</li>
+      </ul>
+    </section>
+
+    <section class="section" id="faq">
+      <h2 class="reveal">Frequently asked questions</h2>
+      <div class="faq">
+        <details class="reveal">
+          <summary>Is it really free?</summary>
+          <p>Yes. There is no paid version, no account and no ads, neither in the app nor on this site. The code is open source under the GPL&nbsp;3.0 license and you can review it on GitHub.</p>
+        </details>
+        <details class="reveal">
+          <summary>What is VB&#8209;CABLE and why does it need it?</summary>
+          <p>It is a virtual audio device made by VB&#8209;Audio. Audio Pitcher sends the sound of the chosen app to that cable, shifts its pitch and plays it back on your headphones or speakers, so you only hear the modified version. The installer adds it for you. VB&#8209;CABLE is donationware: if you find it useful, you can support its authors at <a href="https://vb-audio.com/Cable/" rel="noopener">vb&#8209;audio.com</a>.</p>
+        </details>
+        <details class="reveal">
+          <summary>Windows says "Windows protected your PC". Is it safe?</summary>
+          <p>That warning shows up for new apps without a paid digital signature. Click "More info" and then "Run anyway". All the code is published on GitHub for anyone to review.</p>
+        </details>
+        <details class="reveal">
+          <summary>Do I need to restart my PC?</summary>
+          <p>Only the first time, if the installer added VB&#8209;CABLE. Updates don't ask for it.</p>
+        </details>
+        <details class="reveal">
+          <summary>I hear nothing or the sound is doubled. What do I do?</summary>
+          <p>If you just installed it, restart your PC once. If you hear nothing after closing Audio Pitcher, Windows may have set VB&#8209;CABLE as your main output: open the sound settings (speaker icon on the taskbar) and pick your headphones or speakers. Also check that the output in Audio Pitcher's settings is not "CABLE Input". More help in the <a href="/guides/troubleshooting">troubleshooting guide</a>.</p>
+        </details>
+        <details class="reveal">
+          <summary>Which apps does it work with?</summary>
+          <p>Any app that plays sound: Spotify, browsers, Discord, media players and games. In browsers the change applies to the whole browser, not to a single tab.</p>
+        </details>
+        <details class="reveal">
+          <summary>Does it change the speed too?</summary>
+          <p>No. The pitch changes and the tempo stays the same, so the song lasts just as long.</p>
+        </details>
+        <details class="reveal">
+          <summary>What is the formant?</summary>
+          <p>FORMANT is another way to shift the pitch: it also moves the tone in semitones, but tries to keep the original timbre of voices. Use PITCH or FORMANT, not both at the same time.</p>
+        </details>
+        <details class="reveal">
+          <summary>What do I need to use it?</summary>
+          <p>Windows 10 (version 2004 or later) or 11, 64 bit.</p>
+        </details>
+        <details class="reveal">
+          <summary>Does it update itself?</summary>
+          <p>When a new version is out, the app lets you know when you open it and installs it with one click. If you'd rather wait, a discreet button stays there for later.</p>
+        </details>
+        <details class="reveal">
+          <summary>How do I uninstall it?</summary>
+          <p>From Windows Settings, under Apps, like any other program. VB&#8209;CABLE stays installed because other apps may use it; to remove it, use the uninstaller from its official site.</p>
+        </details>
+      </div>
+    </section>
+
+    <section class="section final">
+      <h2 class="reveal">Try it on your PC</h2>
+      <p class="reveal">One installer, one restart the first time, and you're set.</p>
+      <div class="cta reveal">
+        <a class="btn" href="https://github.com/Bombaxz/audio-pitcher/releases/latest/download/AudioPitcher-Setup.exe" data-download="final">
+          <i class="ph ph-windows-logo"></i> Download for Windows
+        </a>
+      </div>
+    </section>
+
+    <section class="section support" id="support">
+      <div class="support-head reveal">
+        <h2>Support Audio Pitcher</h2>
+        <p>Audio Pitcher is free, open source and will never have ads. I build it in my free time: if it helps you, you can help me keep it going.</p>
+      </div>
+      <div class="support-grid">
+        <div class="support-donate reveal">
+          <a class="donate-option" href="https://ko-fi.com/labalseraa" rel="noopener" target="_blank" data-donate="kofi">
+            <i class="ph ph-heart"></i>
+            <span><b>Donate on Ko&#8209;fi</b><small>From any country, with PayPal or card</small></span>
+            <i class="ph ph-arrow-up-right"></i>
+          </a>
+          <a class="donate-option" href="https://cafecito.app/labalaseraa" rel="noopener" target="_blank" data-donate="cafecito">
+            <i class="ph ph-coffee"></i>
+            <span><b>Cafecito</b><small>From Argentina, with Mercado Pago</small></span>
+            <i class="ph ph-arrow-up-right"></i>
+          </a>
+        </div>
+        <div class="support-share reveal">
+          <img src="/img/qr.svg" alt="QR code for audiopitcher.app" width="120" height="120">
+          <div>
+            <b>Share it with a friend</b>
+            <small>It helps too, and it's free.</small>
+            <div class="share-actions">
+              <button type="button" class="share-btn" data-copy="https://audiopitcher.app/" data-done="Copied"><i class="ph ph-link"></i> Copy link</button>
+              <a class="share-btn" href="https://github.com/Bombaxz/audio-pitcher" rel="noopener"><i class="ph ph-star"></i> Star on GitHub</a>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <dialog class="install" id="install" aria-labelledby="install-title">
+    <button class="install-close" type="button" aria-label="Close"><i class="ph ph-x"></i></button>
+    <h2 id="install-title">Your download is starting</h2>
+    <ol class="install-steps">
+      <li>
+        <span class="install-icon"><i class="ph ph-file-arrow-down"></i></span>
+        <div><h3>Open AudioPitcher-Setup.exe</h3>
+        <p>If Windows shows "Windows protected your PC", click <b>More info</b> and then <b>Run anyway</b>.</p></div>
+      </li>
+      <li>
+        <span class="install-icon"><i class="ph ph-plug"></i></span>
+        <div><h3>Keep VB&#8209;CABLE checked</h3>
+        <p>It's the virtual audio device the app needs. Windows will ask permission to install the driver: accept it.</p></div>
+      </li>
+      <li>
+        <span class="install-icon"><i class="ph ph-arrow-clockwise"></i></span>
+        <div><h3>Restart your PC</h3>
+        <p>Required the first time so VB&#8209;CABLE works. Without restarting you may hear nothing.</p></div>
+      </li>
+    </ol>
+    <p class="install-foot">Download didn't start? <a href="https://github.com/Bombaxz/audio-pitcher/releases/latest/download/AudioPitcher-Setup.exe" data-retry>Try again</a></p>
+  </dialog>
+  <dialog class="donate" id="donate" aria-label="Support Audio Pitcher on Ko-fi">
+    <button class="install-close" type="button" aria-label="Close"><i class="ph ph-x"></i></button>
+    <iframe data-src="https://ko-fi.com/labalseraa/?hidefeed=true&amp;widget=true&amp;embed=true&amp;preview=true" title="Ko-fi" loading="lazy"></iframe>
+  </dialog>
+
+  <footer class="footer">
+    <p>Audio Pitcher is free software under the <a href="https://github.com/Bombaxz/audio-pitcher/blob/main/LICENSE" rel="noopener">GPL&nbsp;3.0</a> license.</p>
+    <nav aria-label="Footer">
+      <a href="/guides/">Guides</a>
+      <a href="https://github.com/Bombaxz/audio-pitcher" rel="noopener">GitHub</a>
+      <a href="https://github.com/Bombaxz/audio-pitcher/issues" rel="noopener">Report a problem</a>
+      <a href="/privacy">Privacy</a>
+    </nav>
+  </footer>
+
+  <script src="/script.js" defer></script>
+</body>
+</html>

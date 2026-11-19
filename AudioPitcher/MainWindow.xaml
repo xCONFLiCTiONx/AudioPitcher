@@ -1,0 +1,986 @@
+<Window x:Class="AudioPitcher.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:local="clr-namespace:AudioPitcher"
+        Title="Audio Pitcher" Width="290" SizeToContent="Height"
+        WindowStyle="None" Background="{DynamicResource BrushBg}"
+        Topmost="True" ResizeMode="CanResize" MinWidth="200" MinHeight="46" ShowInTaskbar="True"
+        MouseLeftButtonDown="Window_MouseDown"
+        WindowStartupLocation="CenterScreen"
+        UseLayoutRounding="True"
+        TextOptions.TextFormattingMode="Ideal"
+        TextOptions.TextRenderingMode="ClearType">
+
+    <WindowChrome.WindowChrome>
+        <!-- 1px inferior mantiene vivo el frame DWM → sombra nativa -->
+        <WindowChrome CaptionHeight="0" ResizeBorderThickness="8"
+                      GlassFrameThickness="0,0,0,1" UseAeroCaptionButtons="False"/>
+    </WindowChrome.WindowChrome>
+
+    <Window.Resources>
+
+        <!-- Engranaje (FillRule EvenOdd deja el agujero central hueco) -->
+        <!-- Íconos del menú de Configuración (Material: tune, brush) -->
+        <Geometry x:Key="TuneGeometry">M3,17v2h6v-2H3z M3,5v2h10V5H3z M13,21v-2h8v-2h-8v-2h-2v6H13z M7,9v2H3v2h4v2h2V9H7z M21,13v-2H11v2H21z M15,9h2V7h4V5h-4V3h-2V9z</Geometry>
+        <Geometry x:Key="AddImageGeometry">M19,7v2.99c0,0-1.99,0.01-2,0V7h-3c0,0,0.01-1.99,0-2h3V2h2v3h3v2H19z M16,11V8h-3V5H5C3.9,5,3,5.9,3,7v12c0,1.1,0.9,2,2,2h12c1.1,0,2-0.9,2-2v-8H16z M5,19l3-4l2,3l3-4l4,5H5z</Geometry>
+        <Geometry x:Key="BrushGeometry">M7,14c-1.66,0-3,1.34-3,3c0,1.31-1.16,2-2,2c0.92,1.22,2.49,2,4,2c2.21,0,4-1.79,4-4C10,15.34,8.66,14,7,14z M20.71,4.63l-1.34-1.34c-0.39-0.39-1.02-0.39-1.41,0L9,12.25L11.75,15l8.96-8.96C21.1,5.65,21.1,5.02,20.71,4.63z</Geometry>
+
+        <!-- Íconos de la grabadora (trazos de Figma, 12×12; el de grabar 13×13) -->
+        <Geometry x:Key="PauseGeometry">M3.8,1.5H2.8C2.358,1.5 2,1.858 2,2.3V9.7C2,10.142 2.358,10.5 2.8,10.5H3.8C4.242,10.5 4.6,10.142 4.6,9.7V2.3C4.6,1.858 4.242,1.5 3.8,1.5Z M9.2,1.5H8.2C7.758,1.5 7.4,1.858 7.4,2.3V9.7C7.4,10.142 7.758,10.5 8.2,10.5H9.2C9.642,10.5 10,10.142 10,9.7V2.3C10,1.858 9.642,1.5 9.2,1.5Z</Geometry>
+        <Geometry x:Key="StopGeometry">M9,1.5H3C2.172,1.5 1.5,2.172 1.5,3V9C1.5,9.828 2.172,10.5 3,10.5H9C9.828,10.5 10.5,9.828 10.5,9V3C10.5,2.172 9.828,1.5 9,1.5Z</Geometry>
+        <Geometry x:Key="PlayGeometry">M3.2,2.3C3.2,1.65 3.9,1.25 4.45,1.6L10.3,5.3C10.82,5.63 10.82,6.37 10.3,6.7L4.45,10.4C3.9,10.75 3.2,10.35 3.2,9.7Z</Geometry>
+        <Geometry x:Key="RecFrameGeometry">M9.75,0.75H3.25C1.869,0.75 0.75,1.869 0.75,3.25V9.75C0.75,11.131 1.869,12.25 3.25,12.25H9.75C11.131,12.25 12.25,11.131 12.25,9.75V3.25C12.25,1.869 11.131,0.75 9.75,0.75Z</Geometry>
+        <Geometry x:Key="RecDotGeometry">M6.5,9.3C8.046,9.3 9.3,8.046 9.3,6.5C9.3,4.954 8.046,3.7 6.5,3.7C4.954,3.7 3.7,4.954 3.7,6.5C3.7,8.046 4.954,9.3 6.5,9.3Z</Geometry>
+
+        <!-- Entrada del menú de Configuración: resalta al pasar el mouse -->
+        <Style x:Key="MenuRow" TargetType="Border">
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="CornerRadius" Value="6"/>
+            <Setter Property="Padding" Value="8,9"/>
+            <Setter Property="Margin" Value="-8,0"/>
+            <Setter Property="Cursor" Value="Hand"/>
+        </Style>
+
+        <Geometry x:Key="GearGeometry">M19.14,12.94c0.04-0.3,0.06-0.61,0.06-0.94c0-0.32-0.02-0.64-0.07-0.94l2.03-1.58c0.18-0.14,0.23-0.41,0.12-0.61l-1.92-3.32c-0.12-0.22-0.37-0.29-0.59-0.22l-2.39,0.96c-0.5-0.38-1.03-0.7-1.62-0.94L14.4,2.81c-0.04-0.24-0.24-0.41-0.48-0.41h-3.84c-0.24,0-0.43,0.17-0.47,0.41L9.25,5.35C8.66,5.59,8.12,5.92,7.63,6.29L5.24,5.33c-0.22-0.08-0.47,0-0.59,0.22L2.74,8.87C2.62,9.08,2.66,9.34,2.86,9.48l2.03,1.58C4.84,11.36,4.8,11.69,4.8,12s0.02,0.64,0.07,0.94l-2.03,1.58c-0.18,0.14-0.23,0.41-0.12,0.61l1.92,3.32c0.12,0.22,0.37,0.29,0.59,0.22l2.39-0.96c0.5,0.38,1.03,0.7,1.62,0.94l0.36,2.54c0.05,0.24,0.24,0.41,0.48,0.41h3.84c0.24,0,0.44-0.17,0.47-0.41l0.36-2.54c0.59-0.24,1.13-0.56,1.62-0.94l2.39,0.96c0.22,0.08,0.47,0,0.59-0.22l1.92-3.32c0.12-0.22,0.07-0.47-0.12-0.61L19.14,12.94z M12,15.6c-1.98,0-3.6-1.62-3.6-3.6s1.62-3.6,3.6-3.6s3.6,1.62,3.6,3.6S13.98,15.6,12,15.6z</Geometry>
+
+        <!-- ComboBox item -->
+        <Style x:Key="DarkComboItem" TargetType="ComboBoxItem">
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="Foreground" Value="{DynamicResource BrushText}"/>
+            <Setter Property="Padding" Value="10,6"/>
+            <Setter Property="FontSize" Value="11"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="ComboBoxItem">
+                        <Border x:Name="Bd" Background="{TemplateBinding Background}" CornerRadius="5"
+                                Padding="{TemplateBinding Padding}" Margin="3,2">
+                            <ContentPresenter/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="Bd" Property="Background" Value="{DynamicResource BrushHover}"/>
+                            </Trigger>
+                            <Trigger Property="IsSelected" Value="True">
+                                <Setter TargetName="Bd" Property="Background" Value="{DynamicResource BrushSelItem}"/>
+                                <Setter Property="Foreground" Value="{DynamicResource BrushBlue}"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <!-- ComboBox -->
+        <Style x:Key="DarkCombo" TargetType="ComboBox">
+            <Setter Property="Background" Value="{DynamicResource BrushCtl}"/>
+            <Setter Property="Foreground" Value="{DynamicResource BrushText}"/>
+            <Setter Property="FontSize" Value="11"/>
+            <Setter Property="Height" Value="32"/>
+            <Setter Property="ItemContainerStyle" Value="{StaticResource DarkComboItem}"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="ComboBox">
+                        <Grid>
+                            <Border x:Name="Bd" Background="{TemplateBinding Background}" CornerRadius="8">
+                                <Grid>
+                                <!-- Sombra interior (diseño Figma): desenfoque 4, bajada 4; 15 % Dark / 5 % White -->
+                                <local:InnerShadow CornerRadius="8" OffsetY="4" Blur="4" ShadowOpacity="{DynamicResource ShadowDropdownOpacity}"/>
+                                <!-- Filo de vidrio (solo con imagen de fondo) -->
+                                <local:GlassEdge CornerRadius="8"/>
+                                <Grid Margin="10,0,8,0">
+                                    <ContentPresenter x:Name="ContentSite" IsHitTestVisible="False"
+                                                      Content="{TemplateBinding SelectionBoxItem}"
+                                                      ContentTemplate="{TemplateBinding SelectionBoxItemTemplate}"
+                                                      VerticalAlignment="Center" HorizontalAlignment="Left"/>
+                                    <TextBlock Text="›" HorizontalAlignment="Right" VerticalAlignment="Center"
+                                               Foreground="{DynamicResource BrushMuted}" FontSize="14" RenderTransformOrigin="0.5,0.5">
+                                        <TextBlock.RenderTransform><RotateTransform Angle="90"/></TextBlock.RenderTransform>
+                                    </TextBlock>
+                                    <ToggleButton IsChecked="{Binding IsDropDownOpen, RelativeSource={RelativeSource TemplatedParent}, Mode=TwoWay}"
+                                                 Background="Transparent" BorderBrush="Transparent" Focusable="False">
+                                        <ToggleButton.Template>
+                                            <ControlTemplate TargetType="ToggleButton">
+                                                <Border Background="Transparent"/>
+                                            </ControlTemplate>
+                                        </ToggleButton.Template>
+                                    </ToggleButton>
+                                </Grid>
+                                </Grid>
+                            </Border>
+                            <Popup x:Name="Popup" Placement="Bottom" IsOpen="{TemplateBinding IsDropDownOpen}"
+                                   AllowsTransparency="True" Focusable="False" PopupAnimation="Fade">
+                                <Border Background="{DynamicResource BrushSurface}" CornerRadius="8"
+                                        BorderBrush="{DynamicResource BrushBorder}" BorderThickness="1"
+                                        MinWidth="{TemplateBinding ActualWidth}" MaxHeight="260" Margin="0,2,0,0">
+                                    <Border.Effect>
+                                        <DropShadowEffect BlurRadius="14" Color="Black" Opacity="0.5" ShadowDepth="3"/>
+                                    </Border.Effect>
+                                    <ScrollViewer CanContentScroll="True" Margin="0,4" RenderOptions.ClearTypeHint="Enabled"
+                                                  VerticalScrollBarVisibility="Hidden">
+                                        <ItemsPresenter/>
+                                    </ScrollViewer>
+                                </Border>
+                            </Popup>
+                        </Grid>
+                        <ControlTemplate.Triggers>
+                            <!-- Sin borde (diseño): el mouse encima o abierto aclara apenas el fondo -->
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="Bd" Property="Background" Value="{DynamicResource BrushCtlHover}"/>
+                            </Trigger>
+                            <Trigger Property="IsDropDownOpen" Value="True">
+                                <Setter TargetName="Bd" Property="Background" Value="{DynamicResource BrushCtlHover}"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <!-- Icon button -->
+        <Style x:Key="IconBtn" TargetType="Button">
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="BorderBrush" Value="Transparent"/>
+            <Setter Property="Foreground" Value="{DynamicResource BrushMuted}"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="Padding" Value="6,4"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="Bd" Background="{TemplateBinding Background}" CornerRadius="6"
+                                Padding="{TemplateBinding Padding}">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="Bd" Property="Background" Value="{DynamicResource BrushCtlHover}"/>
+                                <Setter Property="Foreground" Value="{DynamicResource BrushText}"/>
+                            </Trigger>
+                            <Trigger Property="IsPressed" Value="True">
+                                <Setter TargetName="Bd" Property="Background" Value="{DynamicResource BrushHover}"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <!-- Sin el recuadro punteado de foco de Windows -->
+        <Style TargetType="Slider">
+            <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
+        </Style>
+
+        <!-- Barra de HUE: el recorrido muestra los colores reales (BrushHueSpectrum: según Suave/Vivo) -->
+        <ControlTemplate x:Key="SliderTplHue" TargetType="Slider">
+            <Grid Height="22">
+                <Border Height="8" CornerRadius="4" Margin="8,0" Background="{DynamicResource BrushHueSpectrum}">
+                    <local:GlassEdge CornerRadius="4"/>
+                </Border>
+                <Track x:Name="PART_Track" Margin="8,0">
+                    <Track.DecreaseRepeatButton>
+                        <RepeatButton Command="Slider.DecreaseLarge">
+                            <RepeatButton.Template>
+                                <ControlTemplate TargetType="RepeatButton">
+                                    <Border Background="Transparent" Height="8"/>
+                                </ControlTemplate>
+                            </RepeatButton.Template>
+                        </RepeatButton>
+                    </Track.DecreaseRepeatButton>
+                    <Track.IncreaseRepeatButton>
+                        <RepeatButton Command="Slider.IncreaseLarge">
+                            <RepeatButton.Template>
+                                <ControlTemplate TargetType="RepeatButton">
+                                    <Border Background="Transparent" Height="8"/>
+                                </ControlTemplate>
+                            </RepeatButton.Template>
+                        </RepeatButton>
+                    </Track.IncreaseRepeatButton>
+                    <Track.Thumb>
+                        <Thumb>
+                            <Thumb.Template>
+                                <ControlTemplate TargetType="Thumb">
+                                    <Grid>
+                                        <Ellipse Width="18" Height="18" Fill="White"><Ellipse.Effect><DropShadowEffect Color="Black" BlurRadius="4" Opacity="{DynamicResource ThumbShadowOpacity}" ShadowDepth="0.5" Direction="270"/></Ellipse.Effect></Ellipse>
+                                    </Grid>
+                                </ControlTemplate>
+                            </Thumb.Template>
+                        </Thumb>
+                    </Track.Thumb>
+                </Track>
+            </Grid>
+        </ControlTemplate>
+
+        <!-- Barra de Imagen: cuadriculado de transparencia que se funde hacia opaco (BrushChecker + BrushOpacityFade) -->
+        <ControlTemplate x:Key="SliderTplOpacity" TargetType="Slider">
+            <Grid Height="22">
+                <Border Height="8" CornerRadius="4" Margin="8,0" Background="{DynamicResource BrushChecker}">
+                    <Grid>
+                        <Border CornerRadius="4" Background="{DynamicResource BrushOpacityFade}"/>
+                        <local:GlassEdge CornerRadius="4"/>
+                    </Grid>
+                </Border>
+                <Track x:Name="PART_Track" Margin="8,0">
+                    <Track.DecreaseRepeatButton>
+                        <RepeatButton Command="Slider.DecreaseLarge">
+                            <RepeatButton.Template>
+                                <ControlTemplate TargetType="RepeatButton">
+                                    <Border Background="Transparent" Height="8"/>
+                                </ControlTemplate>
+                            </RepeatButton.Template>
+                        </RepeatButton>
+                    </Track.DecreaseRepeatButton>
+                    <Track.IncreaseRepeatButton>
+                        <RepeatButton Command="Slider.IncreaseLarge">
+                            <RepeatButton.Template>
+                                <ControlTemplate TargetType="RepeatButton">
+                                    <Border Background="Transparent" Height="8"/>
+                                </ControlTemplate>
+                            </RepeatButton.Template>
+                        </RepeatButton>
+                    </Track.IncreaseRepeatButton>
+                    <Track.Thumb>
+                        <Thumb>
+                            <Thumb.Template>
+                                <ControlTemplate TargetType="Thumb">
+                                    <Grid>
+                                        <Ellipse Width="18" Height="18" Fill="White"><Ellipse.Effect><DropShadowEffect Color="Black" BlurRadius="4" Opacity="{DynamicResource ThumbShadowOpacity}" ShadowDepth="0.5" Direction="270"/></Ellipse.Effect></Ellipse>
+                                    </Grid>
+                                </ControlTemplate>
+                            </Thumb.Template>
+                        </Thumb>
+                    </Track.Thumb>
+                </Track>
+            </Grid>
+        </ControlTemplate>
+
+        <!-- Pitch slider template -->
+        <ControlTemplate x:Key="SliderTpl" TargetType="Slider">
+            <Grid Height="22">
+                <Track x:Name="PART_Track" Margin="8,0">
+                    <Track.DecreaseRepeatButton>
+                        <RepeatButton Command="Slider.DecreaseLarge">
+                            <RepeatButton.Template>
+                                <ControlTemplate TargetType="RepeatButton">
+                                    <Border Background="{DynamicResource BrushBlue}" Height="8" CornerRadius="4" Margin="0,0,-9,0"/>
+                                </ControlTemplate>
+                            </RepeatButton.Template>
+                        </RepeatButton>
+                    </Track.DecreaseRepeatButton>
+                    <Track.IncreaseRepeatButton>
+                        <RepeatButton Command="Slider.IncreaseLarge">
+                            <RepeatButton.Template>
+                                <ControlTemplate TargetType="RepeatButton">
+                                    <Border Background="{DynamicResource BrushTrack}" Height="8" CornerRadius="4" Margin="-9,0,0,0"><local:GlassEdge CornerRadius="4"/></Border>
+                                </ControlTemplate>
+                            </RepeatButton.Template>
+                        </RepeatButton>
+                    </Track.IncreaseRepeatButton>
+                    <Track.Thumb>
+                        <Thumb>
+                            <Thumb.Template>
+                                <ControlTemplate TargetType="Thumb">
+                                    <Grid>
+                                        <!-- perilla (diseño): blanca con sombrita negra, sin brillo -->
+                                        <Ellipse Width="18" Height="18" Fill="White"><Ellipse.Effect><DropShadowEffect Color="Black" BlurRadius="4" Opacity="{DynamicResource ThumbShadowOpacity}" ShadowDepth="0.5" Direction="270"/></Ellipse.Effect></Ellipse>
+                                    </Grid>
+                                </ControlTemplate>
+                            </Thumb.Template>
+                        </Thumb>
+                    </Track.Thumb>
+                </Track>
+            </Grid>
+        </ControlTemplate>
+
+        <ControlTemplate x:Key="SliderTplPitch" TargetType="Slider">
+            <Grid Height="22">
+                <Track x:Name="PART_Track" Margin="8,0">
+                    <Track.DecreaseRepeatButton>
+                        <RepeatButton Command="Slider.DecreaseLarge">
+                            <RepeatButton.Template>
+                                <ControlTemplate TargetType="RepeatButton">
+                                    <Border Background="{DynamicResource BrushPitchFill}" Height="8" CornerRadius="4" Margin="0,0,-9,0"/>
+                                </ControlTemplate>
+                            </RepeatButton.Template>
+                        </RepeatButton>
+                    </Track.DecreaseRepeatButton>
+                    <Track.IncreaseRepeatButton>
+                        <RepeatButton Command="Slider.IncreaseLarge">
+                            <RepeatButton.Template>
+                                <ControlTemplate TargetType="RepeatButton">
+                                    <Border Background="{DynamicResource BrushTrackMain}" Height="8" CornerRadius="4" Margin="-9,0,0,0"><local:GlassEdge CornerRadius="4"/></Border>
+                                </ControlTemplate>
+                            </RepeatButton.Template>
+                        </RepeatButton>
+                    </Track.IncreaseRepeatButton>
+                    <Track.Thumb>
+                        <Thumb>
+                            <Thumb.Template>
+                                <ControlTemplate TargetType="Thumb">
+                                    <Grid>
+                                        <!-- perilla (diseño): blanca con sombrita negra, sin brillo -->
+                                        <Ellipse Width="18" Height="18" Fill="White"><Ellipse.Effect><DropShadowEffect Color="Black" BlurRadius="4" Opacity="{DynamicResource ThumbShadowOpacity}" ShadowDepth="0.5" Direction="270"/></Ellipse.Effect></Ellipse>
+                                    </Grid>
+                                </ControlTemplate>
+                            </Thumb.Template>
+                        </Thumb>
+                    </Track.Thumb>
+                </Track>
+            </Grid>
+        </ControlTemplate>
+
+        <ControlTemplate x:Key="SliderTplFormant" TargetType="Slider">
+            <Grid Height="22">
+                <Track x:Name="PART_Track" Margin="8,0">
+                    <Track.DecreaseRepeatButton>
+                        <RepeatButton Command="Slider.DecreaseLarge">
+                            <RepeatButton.Template>
+                                <ControlTemplate TargetType="RepeatButton">
+                                    <Border Background="{DynamicResource BrushFormantFill}" Height="8" CornerRadius="4" Margin="0,0,-9,0"/>
+                                </ControlTemplate>
+                            </RepeatButton.Template>
+                        </RepeatButton>
+                    </Track.DecreaseRepeatButton>
+                    <Track.IncreaseRepeatButton>
+                        <RepeatButton Command="Slider.IncreaseLarge">
+                            <RepeatButton.Template>
+                                <ControlTemplate TargetType="RepeatButton">
+                                    <Border Background="{DynamicResource BrushTrackMain}" Height="8" CornerRadius="4" Margin="-9,0,0,0"><local:GlassEdge CornerRadius="4"/></Border>
+                                </ControlTemplate>
+                            </RepeatButton.Template>
+                        </RepeatButton>
+                    </Track.IncreaseRepeatButton>
+                    <Track.Thumb>
+                        <Thumb>
+                            <Thumb.Template>
+                                <ControlTemplate TargetType="Thumb">
+                                    <Grid>
+                                        <!-- perilla (diseño): blanca con sombrita negra, sin brillo -->
+                                        <Ellipse Width="18" Height="18" Fill="White"><Ellipse.Effect><DropShadowEffect Color="Black" BlurRadius="4" Opacity="{DynamicResource ThumbShadowOpacity}" ShadowDepth="0.5" Direction="270"/></Ellipse.Effect></Ellipse>
+                                    </Grid>
+                                </ControlTemplate>
+                            </Thumb.Template>
+                        </Thumb>
+                    </Track.Thumb>
+                </Track>
+            </Grid>
+        </ControlTemplate>
+
+    </Window.Resources>
+
+    <!-- ClearTypeHint: el marco DWM (sombra) deja la ventana sin ClearType; el fondo es opaco, así que se reactiva -->
+    <Border x:Name="RootBorder" Background="{DynamicResource BrushBg}" CornerRadius="14"
+            RenderOptions.ClearTypeHint="Enabled"
+            BorderBrush="{DynamicResource BrushOverlay}" BorderThickness="1">
+
+        <Grid>
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="*"/>
+            </Grid.RowDefinitions>
+
+            <!-- Imagen de fondo personalizada: debajo de todo, sin clics. El margen negativo
+                 esconde los bordes difusos del desenfoque; el velo (color del tema) la atenúa. -->
+            <Grid x:Name="BgImageHost" Grid.RowSpan="2" Visibility="Collapsed" IsHitTestVisible="False"
+                  ClipToBounds="True" SizeChanged="BgImageHost_SizeChanged">
+                <Rectangle x:Name="BgImageRect" Margin="-40">
+                    <Rectangle.Effect>
+                        <BlurEffect x:Name="BgImageBlurFx" Radius="0" KernelType="Gaussian" RenderingBias="Quality"/>
+                    </Rectangle.Effect>
+                </Rectangle>
+                <Rectangle x:Name="BgImageVeil" Fill="{DynamicResource BrushImageVeil}" Opacity="0.65"/>
+                <!-- Franja del título (diseño): tinte al 50 % hasta los 36 px, se funde a 0 en los 60 px -->
+                <Rectangle x:Name="BgHeaderTint" Fill="{DynamicResource BrushImageVeil}" Opacity="0.5">
+                    <Rectangle.OpacityMask>
+                        <LinearGradientBrush MappingMode="Absolute" StartPoint="0,0" EndPoint="0,60">
+                            <GradientStop Color="Black" Offset="0"/>
+                            <GradientStop Color="Black" Offset="0.6"/>
+                            <GradientStop Color="Transparent" Offset="1"/>
+                        </LinearGradientBrush>
+                    </Rectangle.OpacityMask>
+                </Rectangle>
+            </Grid>
+
+            <!-- ── HEADER ──────────────────────────────────────────────── -->
+            <Grid x:Name="HeaderGrid" Grid.Row="0" Margin="16,12,12,12" MouseLeftButtonDown="Window_MouseDown">
+                <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                    <Rectangle x:Name="StatusLogo" Width="17" Height="18" Fill="{DynamicResource BrushMuted}"
+                               Margin="0,0,7,0" VerticalAlignment="Center"
+                               RenderOptions.BitmapScalingMode="HighQuality">
+                        <Rectangle.OpacityMask>
+                            <ImageBrush ImageSource="pack://application:,,,/logo.png" Stretch="Uniform"/>
+                        </Rectangle.OpacityMask>
+                    </Rectangle>
+                    <TextBlock x:Name="TitleLabel" Text="AUDIO PITCHER"
+                               Foreground="{DynamicResource BrushSubtext}"
+                               FontSize="12" FontWeight="SemiBold" VerticalAlignment="Center"/>
+                </StackPanel>
+                <StackPanel x:Name="HeaderBtns" Orientation="Horizontal" HorizontalAlignment="Right">
+                    <Button x:Name="UpdateBtn" Style="{StaticResource IconBtn}" Visibility="Collapsed"
+                            Click="UpdateBtn_Click" MouseEnter="UpdateBtn_MouseEnter" MouseLeave="UpdateBtn_MouseLeave">
+                        <!-- raya finita con una flechita en el medio, sin relleno -->
+                        <Grid x:Name="UpdPill" Width="20" Height="12" Opacity="0.55">
+                            <Path Data="M1,11 L19,11" Stroke="{DynamicResource BrushGreen}"
+                                  StrokeThickness="0.9" StrokeStartLineCap="Round" StrokeEndLineCap="Round"/>
+                            <Path Data="M7.5,4 L10,1.5 L12.5,4 M10,1.5 L10,8.5" Stroke="{DynamicResource BrushGreen}"
+                                  StrokeThickness="0.9" StrokeStartLineCap="Round" StrokeEndLineCap="Round"
+                                  StrokeLineJoin="Round">
+                                <Path.RenderTransform><TranslateTransform x:Name="UpdHop"/></Path.RenderTransform>
+                            </Path>
+                        </Grid>
+                    </Button>
+                    <Button x:Name="RecBtn" Style="{StaticResource IconBtn}"
+                            Click="RecBtn_Click" ToolTip="{DynamicResource S.RecTip}">
+                        <!-- Ícono de grabar (Figma): marco redondeado + punto; rojo al pasar el mouse o grabando -->
+                        <ContentControl x:Name="RecBtnIcon" Width="13" Height="13" Focusable="False" IsTabStop="False">
+                            <ContentControl.Style>
+                                <Style TargetType="ContentControl">
+                                    <Setter Property="Foreground" Value="{DynamicResource BrushMuted}"/>
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding IsMouseOver, RelativeSource={RelativeSource AncestorType=Button}}" Value="True">
+                                            <Setter Property="Foreground" Value="#F0475A"/>
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </ContentControl.Style>
+                            <Grid>
+                                <Path Data="{StaticResource RecFrameGeometry}" StrokeThickness="1.3"
+                                      Stroke="{Binding Foreground, RelativeSource={RelativeSource AncestorType=ContentControl}}"/>
+                                <Path Data="{StaticResource RecDotGeometry}"
+                                      Fill="{Binding Foreground, RelativeSource={RelativeSource AncestorType=ContentControl}}"/>
+                            </Grid>
+                        </ContentControl>
+                    </Button>
+                    <Button x:Name="SettingsBtn" Style="{StaticResource IconBtn}"
+                            Click="ToggleSettings_Click" ToolTip="{DynamicResource S.SettingsTip}">
+                        <Path Data="{StaticResource GearGeometry}" Fill="{DynamicResource BrushBlue}"
+                              Width="13" Height="13" Stretch="Uniform"/>
+                    </Button>
+                    <Button x:Name="PinBtn" Content="⊙" Style="{StaticResource IconBtn}" FontSize="12"
+                            Click="PinBtn_Click"/>
+                    <Button x:Name="MinimizeBtn" Content="—" Style="{StaticResource IconBtn}" FontSize="12"
+                            Click="Minimize_Click"/>
+                    <Button Content="✕" Style="{StaticResource IconBtn}" FontSize="12" Click="CloseButton_Click"/>
+                </StackPanel>
+            </Grid>
+
+            <!-- ── SCROLLABLE / CLIPPED CONTENT ─────────────────────── -->
+            <Border x:Name="ShadeContent" Grid.Row="1" ClipToBounds="True">
+            <StackPanel RenderOptions.ClearTypeHint="Enabled"><!-- ClipToBounds del padre apaga ClearType; el hint va en el hijo -->
+
+            <Rectangle x:Name="HeaderSeparator" Height="1" Fill="{DynamicResource BrushOverlay}"/>
+
+            <!-- ── MAIN PANEL ──────────────────────────────────────────── -->
+            <StackPanel x:Name="MainPanel" Margin="16,12,16,16">
+
+                <!-- ── APP A PITCHEAR ── -->
+                <TextBlock Text="APP" Foreground="{DynamicResource BrushMuted2}"
+                           FontSize="10" FontWeight="Bold" Margin="0,0,0,5"/>
+                <ComboBox x:Name="AppCombo" Style="{StaticResource DarkCombo}" Margin="0,0,0,14"
+                          ToolTip="{DynamicResource S.AppTip}"
+                          DropDownOpened="AppCombo_DropDownOpened"
+                          SelectionChanged="AppCombo_SelectionChanged"
+                          PreviewMouseLeftButtonDown="AppCombo_PreviewMouseDown"
+                          PreviewMouseLeftButtonUp="AppCombo_PreviewMouseUp">
+                    <ComboBox.ItemTemplate>
+                        <DataTemplate>
+                            <DockPanel LastChildFill="True" Background="Transparent">
+                                <TextBlock DockPanel.Dock="Right" Margin="8,0,0,0" FontSize="12"
+                                           VerticalAlignment="Center" Cursor="Hand"
+                                           PreviewMouseLeftButtonDown="FavStar_MouseDown"
+                                           PreviewMouseLeftButtonUp="FavStar_MouseUp"
+                                           ToolTip="{DynamicResource S.FavTip}">
+                                    <TextBlock.Style>
+                                        <Style TargetType="TextBlock">
+                                            <Setter Property="Visibility" Value="Collapsed"/>
+                                            <Setter Property="Text" Value="☆"/>
+                                            <Setter Property="Foreground" Value="{DynamicResource BrushMuted}"/>
+                                            <Style.Triggers>
+                                                <!-- Solo en items del dropdown (no en la caja de selección) y solo para apps -->
+                                                <MultiDataTrigger>
+                                                    <MultiDataTrigger.Conditions>
+                                                        <Condition Binding="{Binding IsApp}" Value="True"/>
+                                                        <Condition Binding="{Binding RelativeSource={RelativeSource AncestorType=ComboBoxItem}, Path=IsEnabled}" Value="True"/>
+                                                    </MultiDataTrigger.Conditions>
+                                                    <Setter Property="Visibility" Value="Visible"/>
+                                                </MultiDataTrigger>
+                                                <DataTrigger Binding="{Binding IsFavorite}" Value="True">
+                                                    <Setter Property="Text" Value="★"/>
+                                                    <Setter Property="Foreground" Value="#F9E2AF"/>
+                                                </DataTrigger>
+                                            </Style.Triggers>
+                                        </Style>
+                                    </TextBlock.Style>
+                                </TextBlock>
+                                <StackPanel Orientation="Horizontal">
+                                    <Image Source="{Binding Icon}" Width="16" Height="16" Margin="0,0,8,0"
+                                           VerticalAlignment="Center"
+                                           RenderOptions.BitmapScalingMode="HighQuality"/>
+                                    <TextBlock Text="{Binding Name}" VerticalAlignment="Center"/>
+                                </StackPanel>
+                            </DockPanel>
+                        </DataTemplate>
+                    </ComboBox.ItemTemplate>
+                </ComboBox>
+
+                <!-- ── PITCH ── -->
+                <Grid Margin="0,0,0,4">
+                    <TextBlock x:Name="PitchHeader" Text="PITCH" Foreground="{DynamicResource BrushMuted2}"
+                               FontSize="10" FontWeight="Bold" VerticalAlignment="Center"
+                               MouseRightButtonUp="SectionLabel_ColorPick" Tag="label:PITCH" Cursor="Hand"/>
+                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Center">
+                        <Grid>
+                            <TextBlock x:Name="PitchLabel" MouseWheel="PitchWheel" Text="+0.0" Foreground="{DynamicResource BrushPitchFill}"
+                                       FontSize="20" FontWeight="Bold" Cursor="SizeWE"
+                                       MouseLeftButtonDown="PitchLabel_MouseDown"
+                                       MouseMove="PitchLabel_MouseMove"
+                                       MouseLeftButtonUp="PitchLabel_MouseUp"
+                                       MouseRightButtonUp="Slider_ColorPick"/>
+                            <TextBox x:Name="PitchEditBox" Visibility="Collapsed"
+                                     Background="Transparent" Foreground="{DynamicResource BrushPitchFill}"
+                                     CaretBrush="{DynamicResource BrushPitchFill}"
+                                     BorderBrush="{DynamicResource BrushPitchFill}" BorderThickness="0,0,0,1"
+                                     SelectionBrush="{DynamicResource BrushPitchFill}"
+                                     FontSize="18" FontWeight="Bold" Width="58" MaxLength="6"
+                                     VerticalAlignment="Center"
+                                     KeyDown="PitchEditBox_KeyDown" LostFocus="PitchEditBox_LostFocus"/>
+                        </Grid>
+                        <TextBlock Text=" st" Foreground="{DynamicResource BrushMuted2}"
+                                   FontSize="10" VerticalAlignment="Bottom" Margin="0,0,0,4"/>
+                        <Button x:Name="PitchResetBtn" Style="{StaticResource IconBtn}" Click="ResetPitch_Click" Margin="4,0,0,0"
+                                ToolTip="{DynamicResource S.ResetTip}" Foreground="{DynamicResource BrushMuted}">
+                            <TextBlock Text="⟲" FontSize="13" RenderTransformOrigin="0.5,0.5"/>
+                        </Button>
+                    </StackPanel>
+                </Grid>
+                <Slider x:Name="PitchSlider" PreviewMouseWheel="PitchWheel" Minimum="-12" Maximum="12" Value="0"
+                        SmallChange="0.1" LargeChange="1"
+                        ValueChanged="PitchSlider_ValueChanged" Margin="0,0,0,2"
+                        Template="{StaticResource SliderTplPitch}"
+                        PreviewMouseLeftButtonDown="PitchSlider_PreviewMouseDown" PreviewMouseLeftButtonUp="PitchSlider_PreviewMouseUp"
+                        MouseRightButtonUp="Slider_ColorPick"/>
+                <Grid Margin="8,0,8,12">
+                    <TextBlock Text="-12" Foreground="{DynamicResource BrushHint}" FontSize="10"/>
+                    <TextBlock Text="0"   Foreground="{DynamicResource BrushHint}" FontSize="10" HorizontalAlignment="Center"/>
+                    <TextBlock Text="+12" Foreground="{DynamicResource BrushHint}" FontSize="10" HorizontalAlignment="Right"/>
+                </Grid>
+
+                <!-- ── FORMANT ── -->
+                <Grid Margin="0,0,0,4">
+                    <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                        <TextBlock x:Name="FormantHeader" Text="FORMANT" Foreground="{DynamicResource BrushMuted2}"
+                                   FontSize="10" FontWeight="Bold" VerticalAlignment="Center"
+                                   MouseRightButtonUp="SectionLabel_ColorPick" Tag="label:FORMANT" Cursor="Hand"/>
+                        <TextBlock x:Name="FormantUnavailLabel" Text="{DynamicResource S.NeedsRubberBand}"
+                                   Foreground="{DynamicResource BrushMuted}" FontSize="9" VerticalAlignment="Center"
+                                   Visibility="Collapsed"/>
+                    </StackPanel>
+                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Center">
+                        <Grid>
+                            <TextBlock x:Name="FormantLabel" MouseWheel="FormantWheel" Text="+0.0" Foreground="{DynamicResource BrushFormantFill}"
+                                       FontSize="20" FontWeight="Bold" Cursor="SizeWE"
+                                       MouseLeftButtonDown="FormantLabel_MouseDown"
+                                       MouseMove="FormantLabel_MouseMove"
+                                       MouseLeftButtonUp="FormantLabel_MouseUp"
+                                       MouseRightButtonUp="FormantLabel_ColorPick"/>
+                            <TextBox x:Name="FormantEditBox" Visibility="Collapsed"
+                                     Background="Transparent" Foreground="{DynamicResource BrushFormantFill}"
+                                     CaretBrush="{DynamicResource BrushFormantFill}"
+                                     BorderBrush="{DynamicResource BrushFormantFill}" BorderThickness="0,0,0,1"
+                                     SelectionBrush="{DynamicResource BrushFormantFill}"
+                                     FontSize="18" FontWeight="Bold" Width="58" MaxLength="6"
+                                     VerticalAlignment="Center"
+                                     KeyDown="FormantEditBox_KeyDown" LostFocus="FormantEditBox_LostFocus"/>
+                        </Grid>
+                        <TextBlock Text=" st" Foreground="{DynamicResource BrushMuted2}"
+                                   FontSize="10" VerticalAlignment="Bottom" Margin="0,0,0,4"/>
+                        <Button x:Name="FormantResetBtn" Style="{StaticResource IconBtn}" Click="ResetFormant_Click" Margin="4,0,0,0"
+                                ToolTip="{DynamicResource S.ResetTip}" Foreground="{DynamicResource BrushMuted}">
+                            <TextBlock Text="⟲" FontSize="13" RenderTransformOrigin="0.5,0.5"/>
+                        </Button>
+                    </StackPanel>
+                </Grid>
+                <Slider x:Name="FormantSlider" PreviewMouseWheel="FormantWheel" Minimum="-12" Maximum="12" Value="0"
+                        SmallChange="0.1" LargeChange="1"
+                        ValueChanged="FormantSlider_ValueChanged" Margin="0,0,0,2"
+                        Template="{StaticResource SliderTplFormant}"
+                        PreviewMouseLeftButtonDown="FormantSlider_PreviewMouseDown" PreviewMouseLeftButtonUp="FormantSlider_PreviewMouseUp"
+                        MouseRightButtonUp="FormantLabel_ColorPick"/>
+                <Grid Margin="8,0,8,14">
+                    <TextBlock Text="-12" Foreground="{DynamicResource BrushHint}" FontSize="10"/>
+                    <TextBlock Text="0"   Foreground="{DynamicResource BrushHint}" FontSize="10" HorizontalAlignment="Center"/>
+                    <TextBlock Text="+12" Foreground="{DynamicResource BrushHint}" FontSize="10" HorizontalAlignment="Right"/>
+                </Grid>
+
+                <!-- ── FX toggle ── -->
+                <StackPanel Orientation="Horizontal" HorizontalAlignment="Left" Margin="0,0,0,10">
+                    <Border x:Name="FxPill" Width="28" Height="15" CornerRadius="7.5"
+                            Background="{DynamicResource BrushBlue}" Cursor="Hand" VerticalAlignment="Center"
+                            MouseLeftButtonDown="FxOnOff_Click" MouseRightButtonUp="FxBtn_ColorPick"
+                            Margin="0,0,8,0">
+                        <!-- Perilla (diseño): 13 px, sombra suave hacia abajo -->
+                        <Ellipse x:Name="FxPillDot" Width="13" Height="13" Fill="White"
+                                 HorizontalAlignment="Left" Margin="14,0,0,0">
+                            <Ellipse.Effect>
+                                <DropShadowEffect Color="Black" BlurRadius="8" ShadowDepth="3" Direction="270" Opacity="0.2"/>
+                            </Ellipse.Effect>
+                        </Ellipse>
+                    </Border>
+                    <Button x:Name="FxBtn" Click="ToggleFx_Click" MouseRightButtonUp="FxBtn_ColorPick" Cursor="Hand" VerticalAlignment="Center">
+                        <Button.Template>
+                            <ControlTemplate TargetType="Button">
+                                <StackPanel x:Name="Sp" Orientation="Horizontal">
+                                    <TextBlock x:Name="FxTextLabel" Text="FX" Foreground="{DynamicResource BrushBlue}"
+                                               FontSize="11" FontWeight="Bold" VerticalAlignment="Center"/>
+                                    <TextBlock x:Name="FxArrow" Text=" ▸" Foreground="{DynamicResource BrushBlue}"
+                                               FontSize="10" VerticalAlignment="Center"/>
+                                </StackPanel>
+                                <ControlTemplate.Triggers>
+                                    <Trigger Property="IsMouseOver" Value="True">
+                                        <Setter TargetName="Sp" Property="Opacity" Value="0.65"/>
+                                    </Trigger>
+                                </ControlTemplate.Triggers>
+                            </ControlTemplate>
+                        </Button.Template>
+                    </Button>
+                </StackPanel>
+
+                <!-- ── FX PANEL (animated) ── -->
+                <Border x:Name="FxPanel" MaxHeight="0" ClipToBounds="True">
+                  <StackPanel Margin="0,0,0,10" RenderOptions.ClearTypeHint="Enabled">
+
+                    <!-- REVERB -->
+                    <Grid Cursor="Hand" MouseLeftButtonDown="ReverbToggle_Click" Margin="0,0,0,4">
+                        <TextBlock x:Name="ReverbHeader" Text="REVERB" Foreground="{DynamicResource BrushMuted2}"
+                                   FontSize="10" FontWeight="Bold" VerticalAlignment="Center"
+                                   MouseRightButtonUp="SectionLabel_ColorPick" Tag="label:REVERB"/>
+                        <TextBlock x:Name="ReverbArrow" Text="▾" Foreground="{DynamicResource BrushMuted}"
+                                   FontSize="10" HorizontalAlignment="Right" VerticalAlignment="Center"/>
+                    </Grid>
+                    <Border x:Name="ReverbSection" MaxHeight="90" ClipToBounds="True">
+                        <Viewbox Stretch="Uniform" HorizontalAlignment="Center" MaxWidth="180">
+                        <StackPanel Orientation="Horizontal" Margin="0,0,0,14">
+                            <local:KnobControl x:Name="ReverbWetKnob"  Label="WET"  Minimum="0" Maximum="1"   Value="0"   Scale="100" Suffix="%" DecimalPlaces="0" KnobColor="#A6E3A1" Margin="3,0" ValueChanged="ReverbWetKnob_Changed"/>
+                            <local:KnobControl x:Name="ReverbRoomKnob" Label="ROOM" Minimum="0" Maximum="1"   Value="0.5" Scale="100" Suffix="%" DecimalPlaces="0"                    Margin="3,0" ValueChanged="ReverbRoomKnob_Changed"/>
+                            <local:KnobControl x:Name="ReverbDampKnob" Label="DAMP" Minimum="0" Maximum="1"   Value="0.5" Scale="100" Suffix="%" DecimalPlaces="0"                    Margin="3,0" ValueChanged="ReverbDampKnob_Changed"/>
+                        </StackPanel>
+                        </Viewbox>
+                    </Border>
+
+                    <!-- DELAY -->
+                    <Grid Cursor="Hand" MouseLeftButtonDown="DelayToggle_Click" Margin="0,0,0,4">
+                        <TextBlock x:Name="DelayHeader" Text="DELAY" Foreground="{DynamicResource BrushMuted2}"
+                                   FontSize="10" FontWeight="Bold" VerticalAlignment="Center"
+                                   MouseRightButtonUp="SectionLabel_ColorPick" Tag="label:DELAY"/>
+                        <TextBlock x:Name="DelayArrow" Text="▾" Foreground="{DynamicResource BrushMuted}"
+                                   FontSize="10" HorizontalAlignment="Right" VerticalAlignment="Center"/>
+                    </Grid>
+                    <Border x:Name="DelaySection" MaxHeight="90" ClipToBounds="True">
+                        <Viewbox Stretch="Uniform" HorizontalAlignment="Center" MaxWidth="180">
+                        <StackPanel Orientation="Horizontal" Margin="0,0,0,14">
+                            <local:KnobControl x:Name="DelayWetKnob"  Label="WET"      Minimum="0"  Maximum="1"   Value="0"    Scale="100" Suffix="%" DecimalPlaces="0" KnobColor="#A6E3A1" Margin="3,0" ValueChanged="DelayWetKnob_Changed"/>
+                            <local:KnobControl x:Name="DelayTimeKnob" Label="TIME"     Minimum="100" Maximum="800" Value="300"               Suffix="ms" DecimalPlaces="0" KnobColor="#F9E2AF" Margin="3,0" ValueChanged="DelayTimeKnob_Changed"/>
+                            <local:KnobControl x:Name="DelayFbKnob"   Label="FEEDBACK" Minimum="0"  Maximum="0.9" Value="0.45" Scale="100" Suffix="%" DecimalPlaces="0"                    Margin="3,0" ValueChanged="DelayFbKnob_Changed"/>
+                        </StackPanel>
+                        </Viewbox>
+                    </Border>
+
+                    <!-- CHORUS -->
+                    <Grid Cursor="Hand" MouseLeftButtonDown="ChorusToggle_Click" Margin="0,0,0,4">
+                        <TextBlock x:Name="ChorusHeader" Text="CHORUS" Foreground="{DynamicResource BrushMuted2}"
+                                   FontSize="10" FontWeight="Bold" VerticalAlignment="Center"
+                                   MouseRightButtonUp="SectionLabel_ColorPick" Tag="label:CHORUS"/>
+                        <TextBlock x:Name="ChorusArrow" Text="▾" Foreground="{DynamicResource BrushMuted}"
+                                   FontSize="10" HorizontalAlignment="Right" VerticalAlignment="Center"/>
+                    </Grid>
+                    <Border x:Name="ChorusSection" MaxHeight="90" ClipToBounds="True">
+                        <Viewbox Stretch="Uniform" HorizontalAlignment="Center" MaxWidth="180">
+                        <StackPanel Orientation="Horizontal" Margin="0,0,0,4">
+                            <local:KnobControl x:Name="ChorusWetKnob"   Label="WET"   Minimum="0"   Maximum="1"  Value="0"   Scale="100" Suffix="%" DecimalPlaces="0" KnobColor="#A6E3A1" Margin="3,0" ValueChanged="ChorusWetKnob_Changed"/>
+                            <local:KnobControl x:Name="ChorusRateKnob"  Label="RATE"  Minimum="0.1" Maximum="4"  Value="0.8"             Suffix="Hz" DecimalPlaces="1" KnobColor="#CBA6F7" Margin="3,0" ValueChanged="ChorusRateKnob_Changed"/>
+                            <local:KnobControl x:Name="ChorusDepthKnob" Label="DEPTH" Minimum="1"   Maximum="20" Value="5"               Suffix="ms" DecimalPlaces="1" KnobColor="#CBA6F7" Margin="3,0" ValueChanged="ChorusDepthKnob_Changed"/>
+                        </StackPanel>
+                        </Viewbox>
+                    </Border>
+
+                  </StackPanel>
+                </Border>
+
+                <!-- Status -->
+                <TextBlock x:Name="StatusLabel" Text="{DynamicResource S.StatusNoAudio}"
+                           Foreground="{DynamicResource BrushMuted2}" FontSize="10"
+                           TextWrapping="Wrap" TextAlignment="Center"/>
+
+            </StackPanel>
+
+            <!-- ── SETTINGS PANEL ──────────────────────────────────────── -->
+            <StackPanel x:Name="SettingsPanel" Visibility="Collapsed" Margin="16,12,16,16">
+                <!-- Título; en General/Apariencia es un "‹ volver" -->
+                <StackPanel x:Name="SettingsHeader" Orientation="Horizontal" Margin="0,0,0,12" Background="Transparent"
+                            MouseLeftButtonDown="SettingsBack_Click">
+                    <TextBlock x:Name="SettingsBackArrow" Text="‹" FontSize="15" Margin="0,-4,6,0" Visibility="Collapsed"
+                               Foreground="{DynamicResource BrushMuted2}" VerticalAlignment="Center"/>
+                    <TextBlock x:Name="SettingsTitleText" Text="{DynamicResource S.SettingsTitle}" Foreground="{DynamicResource BrushMuted2}"
+                               FontSize="10" FontWeight="Bold" VerticalAlignment="Center"/>
+                </StackPanel>
+
+                <!-- Inicio: salida de audio + menú -->
+                <StackPanel x:Name="SettingsHome">
+                    <TextBlock Text="{DynamicResource S.AudioOutput}" Foreground="{DynamicResource BrushMuted2}"
+                               FontSize="10" FontWeight="Bold" Margin="0,0,0,5"/>
+                    <ComboBox x:Name="OutputCombo" Style="{StaticResource DarkCombo}" Margin="0,0,0,4"
+                              SelectionChanged="OutputCombo_SelectionChanged"/>
+                    <TextBlock Text="{DynamicResource S.OutputHint}"
+                               Foreground="{DynamicResource BrushHint}" FontSize="10"
+                               TextTrimming="CharacterEllipsis" Margin="0,0,0,14"/>
+                    <Border Style="{StaticResource MenuRow}" Tag="1" MouseLeftButtonDown="SettingsMenu_Click">
+                        <DockPanel>
+                            <Path DockPanel.Dock="Left" Data="{StaticResource TuneGeometry}" Fill="{DynamicResource BrushBlue}"
+                                  Stretch="Uniform" Width="14" Height="14" Margin="0,0,10,0" VerticalAlignment="Center"/>
+                            <TextBlock DockPanel.Dock="Right" Text="›" FontSize="15" Margin="0,-3,0,0"
+                                       Foreground="{DynamicResource BrushMuted}" VerticalAlignment="Center"/>
+                            <TextBlock Text="{DynamicResource S.TabGeneral}" FontSize="12"
+                                       Foreground="{DynamicResource BrushText}" VerticalAlignment="Center"/>
+                        </DockPanel>
+                    </Border>
+                    <!-- Divisor: línea fina; con imagen, barrita de vidrio de 2 px -->
+                    <Border x:Name="MenuDivider" Height="1" Background="{DynamicResource BrushTrack}" CornerRadius="1" Margin="0,2">
+                        <local:GlassEdge CornerRadius="1"/>
+                    </Border>
+                    <Border Style="{StaticResource MenuRow}" Tag="2" MouseLeftButtonDown="SettingsMenu_Click">
+                        <DockPanel>
+                            <Path DockPanel.Dock="Left" Data="{StaticResource BrushGeometry}" Fill="{DynamicResource BrushBlue}"
+                                  Stretch="Uniform" Width="14" Height="14" Margin="0,0,10,0" VerticalAlignment="Center"/>
+                            <TextBlock DockPanel.Dock="Right" Text="›" FontSize="15" Margin="0,-3,0,0"
+                                       Foreground="{DynamicResource BrushMuted}" VerticalAlignment="Center"/>
+                            <TextBlock Text="{DynamicResource S.TabAppearance}" FontSize="12"
+                                       Foreground="{DynamicResource BrushText}" VerticalAlignment="Center"/>
+                        </DockPanel>
+                    </Border>
+                </StackPanel>
+
+                <StackPanel x:Name="GeneralTab" Visibility="Collapsed">
+                <TextBlock Text="{DynamicResource S.Language}" Foreground="{DynamicResource BrushMuted2}"
+                           FontSize="10" FontWeight="Bold" Margin="0,0,0,5"/>
+                <ComboBox x:Name="LangCombo" Style="{StaticResource DarkCombo}" Margin="0,0,0,14"
+                          SelectionChanged="LangCombo_SelectionChanged"/>
+
+                <!-- Motor de pitch -->
+                <TextBlock Text="{DynamicResource S.PitchEngine}" Foreground="{DynamicResource BrushMuted2}"
+                           FontSize="10" FontWeight="Bold" Margin="0,0,0,6"/>
+                <ContentControl x:Name="EngineSegHost" Margin="0,0,0,14"/>
+
+                <TextBlock Text="{DynamicResource S.OnMinimize}" Foreground="{DynamicResource BrushMuted2}"
+                           FontSize="10" FontWeight="Bold" Margin="0,0,0,6"/>
+                <ContentControl x:Name="MinimizeSegHost" Margin="0,0,0,14"/>
+
+                <!-- Atajos globales (filas generadas en código) -->
+                <TextBlock Text="{DynamicResource S.Shortcuts}" Foreground="{DynamicResource BrushMuted2}"
+                           FontSize="10" FontWeight="Bold" Margin="0,0,0,6"/>
+                <StackPanel x:Name="HotkeyRows" SizeChanged="HotkeyRows_SizeChanged"/>
+                </StackPanel>
+
+                <StackPanel x:Name="AppearanceTab" Visibility="Collapsed">
+                <!-- Apariencia -->
+                <Grid Margin="0,-28,0,10">
+                    <Button HorizontalAlignment="Right" Style="{StaticResource IconBtn}"
+                            Click="ResetColors_Click" ToolTip="{DynamicResource S.ResetColorsTip}"
+                            Foreground="{DynamicResource BrushMuted}" Padding="4,2">
+                        <TextBlock Text="↺ reset" FontSize="9"/>
+                    </Button>
+                </Grid>
+
+                <Grid Margin="0,0,0,3">
+                    <TextBlock Text="HUE" Foreground="{DynamicResource BrushMuted2}" FontSize="10" FontWeight="Bold"/>
+                    <TextBlock x:Name="HueLabel" Text="0°" Foreground="{DynamicResource BrushMuted}"
+                               FontSize="10" HorizontalAlignment="Right"/>
+                </Grid>
+                <Slider x:Name="HueSlider" Minimum="-180" Maximum="180" Value="0"
+                        SmallChange="1" LargeChange="10"
+                        Template="{StaticResource SliderTplHue}" Margin="0,0,0,10"
+                        ValueChanged="HueSlider_ValueChanged"/>
+                <!-- Acentos suaves o vivos (se recuerda aparte para fondos oscuros y claros) -->
+                <StackPanel x:Name="VividRow" Margin="0,0,0,12">
+                    <TextBlock Text="{DynamicResource S.AccentLabel}" Foreground="{DynamicResource BrushMuted}" FontSize="10" Margin="0,0,0,5"/>
+                    <ContentControl x:Name="VividSegHost"/>
+                </StackPanel>
+
+                <TextBlock Text="{DynamicResource S.Text}" Foreground="{DynamicResource BrushMuted2}"
+                           FontSize="10" FontWeight="Bold" Margin="0,0,0,6"/>
+                <ContentControl x:Name="TextSegHost" Margin="0,0,0,6"/>
+
+                <Grid Margin="0,0,0,3">
+                    <TextBlock Text="{DynamicResource S.Contrast}" Foreground="{DynamicResource BrushMuted}" FontSize="10"/>
+                    <TextBlock x:Name="BrilloLabel" Text="100%" Foreground="{DynamicResource BrushMuted}"
+                               FontSize="10" HorizontalAlignment="Right"/>
+                </Grid>
+                <Slider x:Name="BrilloSlider" Minimum="0" Maximum="100" Value="100"
+                        SmallChange="1" LargeChange="10"
+                        Template="{StaticResource SliderTpl}" Margin="0,0,0,12"
+                        ValueChanged="BrilloSlider_ValueChanged"/>
+
+                <TextBlock Text="{DynamicResource S.Background}" Foreground="{DynamicResource BrushMuted2}"
+                           FontSize="10" FontWeight="Bold" Margin="0,0,0,6"/>
+                <ContentControl x:Name="BgSegHost" Margin="0,0,0,4"/>
+
+                <!-- Galería de imágenes (diseño opción B): vista previa con "Quitar" + tira de miniaturas -->
+                <Border x:Name="BgPreview" Height="104" CornerRadius="8" Margin="0,4,0,0" Visibility="Collapsed">
+                    <Border HorizontalAlignment="Right" VerticalAlignment="Bottom" Margin="0,0,8,8"
+                            CornerRadius="6" Padding="9,4" Background="#8C000000" Cursor="Hand"
+                            MouseLeftButtonDown="BgRemove_Click">
+                        <TextBlock Text="{DynamicResource S.BgRemove}" Foreground="White" FontSize="9"/>
+                    </Border>
+                </Border>
+                <ScrollViewer x:Name="BgStripScroll" Margin="0,8,0,0" HorizontalScrollBarVisibility="Hidden"
+                              VerticalScrollBarVisibility="Disabled" PreviewMouseWheel="BgStrip_MouseWheel">
+                    <StackPanel x:Name="BgGallery" Orientation="Horizontal"/>
+                </ScrollViewer>
+                <StackPanel x:Name="BgImageOptions" Visibility="Collapsed" Margin="0,8,0,0">
+                    <!-- Imagen clara u oscura: Auto la detecta -->
+                    <TextBlock Text="{DynamicResource S.BgTone}" Foreground="{DynamicResource BrushMuted}" FontSize="10" Margin="0,0,0,5"/>
+                    <ContentControl x:Name="ToneSegHost" Margin="0,0,0,10"/>
+                    <Grid Margin="0,0,0,3">
+                        <TextBlock Text="{DynamicResource S.BgImageAmount}" Foreground="{DynamicResource BrushMuted}" FontSize="10"/>
+                        <TextBlock x:Name="BgImageAmountLabel" Text="35%" Foreground="{DynamicResource BrushMuted}"
+                                   FontSize="10" HorizontalAlignment="Right"/>
+                    </Grid>
+                    <Slider x:Name="BgImageAmountSlider" Minimum="0" Maximum="100" Value="35"
+                            SmallChange="1" LargeChange="10" Template="{StaticResource SliderTplOpacity}" Margin="0,0,0,8"
+                            ValueChanged="BgImageAmount_ValueChanged"/>
+                    <Grid Margin="0,0,0,3">
+                        <TextBlock Text="{DynamicResource S.BgImageBlur}" Foreground="{DynamicResource BrushMuted}" FontSize="10"/>
+                        <TextBlock x:Name="BgImageBlurLabel" Text="10" Foreground="{DynamicResource BrushMuted}"
+                                   FontSize="10" HorizontalAlignment="Right"/>
+                    </Grid>
+                    <Slider x:Name="BgImageBlurSlider" Minimum="0" Maximum="30" Value="10"
+                            SmallChange="1" LargeChange="5" Template="{StaticResource SliderTpl}"
+                            ValueChanged="BgImageBlur_ValueChanged"/>
+                </StackPanel>
+
+                </StackPanel>
+
+                <!-- Una sola línea: si no entra, primero sale la versión y después Licencias (código) -->
+                <TextBlock x:Name="FooterText" Margin="0,16,0,0" FontSize="9" TextTrimming="CharacterEllipsis"
+                           Foreground="{DynamicResource BrushHint}" SizeChanged="FooterText_SizeChanged">
+                    <Run x:Name="VersionRun" Text="v1.0.0"/>
+                    <Run x:Name="VersionSep" Text=" · "/>
+                    <Hyperlink Click="SourceLink_Click" TextDecorations="{x:Null}"
+                               Foreground="{DynamicResource BrushHint}"><Run Text="{DynamicResource S.SourceCode}"/></Hyperlink>
+                    <Run Text=" · "/>
+                    <Hyperlink x:Name="LicensesLink" Click="LicensesLink_Click" TextDecorations="{x:Null}"
+                               Foreground="{DynamicResource BrushHint}"><Run Text="{DynamicResource S.Licenses}"/></Hyperlink>
+                    <Run x:Name="LicensesSep" Text=" · "/>
+                    <Hyperlink x:Name="ReportLink" Click="ReportLink_Click" TextDecorations="{x:Null}"
+                               Foreground="{DynamicResource BrushHint}"
+                               ToolTip="{DynamicResource S.ReportTip}"><Run Text="{DynamicResource S.Report}"/></Hyperlink>
+                </TextBlock>
+
+            </StackPanel>
+
+        <!-- ── RECORD PANEL ───────────────────────────────────────────────── -->
+        <Rectangle x:Name="RecordSeparator" Height="1" Fill="{DynamicResource BrushOverlay}"/>
+        <Border x:Name="RecordPanel" MaxHeight="0" ClipToBounds="True">
+            <StackPanel Margin="16,10,16,12" RenderOptions.ClearTypeHint="Enabled">
+
+                <!-- Status row -->
+                <Grid Margin="0,0,0,8">
+                    <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                        <Ellipse x:Name="RecDot" Width="8" Height="8" Fill="#3D3D56"
+                                 VerticalAlignment="Center" Margin="0,0,8,0"/>
+                        <TextBlock x:Name="RecTimerLabel" Text="0:00.0"
+                                   Foreground="{DynamicResource BrushText}"
+                                   FontSize="13" FontWeight="Bold" VerticalAlignment="Center"/>
+                    </StackPanel>
+                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Center">
+                        <Button x:Name="RecPlayBtn" Style="{StaticResource IconBtn}" Click="RecPlay_Click"
+                                ToolTip="{DynamicResource S.PreviewTip}" Visibility="Collapsed">
+                            <Path x:Name="RecPlayIcon" Data="{StaticResource PlayGeometry}" Width="12" Height="12"
+                                  Fill="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}"/>
+                        </Button>
+                        <Button x:Name="RecPauseBtn" Style="{StaticResource IconBtn}" Click="RecPause_Click"
+                                ToolTip="{DynamicResource S.PauseTip}">
+                            <Path x:Name="RecPauseIcon" Data="{StaticResource PauseGeometry}" Width="12" Height="12"
+                                  Fill="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}"/>
+                        </Button>
+                        <Button x:Name="RecStopBtn" Style="{StaticResource IconBtn}" Click="RecStop_Click"
+                                ToolTip="{DynamicResource S.StopTip}">
+                            <Path Data="{StaticResource StopGeometry}" Width="12" Height="12"
+                                  Fill="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}"/>
+                        </Button>
+                    </StackPanel>
+                </Grid>
+
+                <!-- Waveform -->
+                <Grid Height="70" Margin="0,0,0,8">
+                    <Border x:Name="WaveBox" CornerRadius="6" ClipToBounds="True" Background="{DynamicResource BrushWave}">
+                        <Grid>
+                            <local:GlassEdge CornerRadius="6"/>
+                            <local:WaveformControl x:Name="Waveform"/>
+                        </Grid>
+                    </Border>
+                    <TextBlock x:Name="NormGainLabel" Visibility="Collapsed"
+                               HorizontalAlignment="Right" VerticalAlignment="Top"
+                               Margin="0,5,8,0" FontSize="10" FontWeight="Bold"
+                               Foreground="#A6E3A1"/>
+                </Grid>
+
+                <!-- Normalize + Save row -->
+                <Grid Margin="0,0,0,0">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="*"/>
+                    </Grid.ColumnDefinitions>
+
+                    <!-- Normalize toggle -->
+                    <Border x:Name="NormBtn" Grid.Column="0" Height="28" CornerRadius="6"
+                            Padding="10,0" Margin="0,0,6,0" Cursor="Hand"
+                            Background="{DynamicResource BrushCtl}"
+                            BorderBrush="{DynamicResource BrushCtlBorder}" BorderThickness="1"
+                            MouseLeftButtonDown="NormBtn_Click" ToolTip="{DynamicResource S.NormTip}">
+                        <Grid>
+                        <local:GlassEdge CornerRadius="6" Margin="-11,-1"/>
+                        <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                            <Ellipse x:Name="NormDot" Width="6" Height="6" Margin="0,0,5,0"
+                                     Fill="{DynamicResource BrushBorder}"/>
+                            <TextBlock Text="NORM" Foreground="{DynamicResource BrushMuted}"
+                                       FontSize="9" FontWeight="Bold"/>
+                        </StackPanel>
+                        </Grid>
+                    </Border>
+
+                    <!-- Save -->
+                    <Button x:Name="RecSaveBtn" Grid.Column="1" Click="RecSave_Click" IsEnabled="False"
+                            Height="28" Cursor="Hand">
+                    <Button.Template>
+                        <ControlTemplate TargetType="Button">
+                            <Border x:Name="Bd" Background="{DynamicResource BrushCtl}"
+                                    BorderBrush="{DynamicResource BrushCtlBorder}" BorderThickness="1" CornerRadius="6">
+                                <Grid>
+                                <local:GlassEdge CornerRadius="6" Margin="-1"/>
+                                <TextBlock Text="{DynamicResource S.SaveWav}" HorizontalAlignment="Center" VerticalAlignment="Center"
+                                           Foreground="{DynamicResource BrushText}" FontSize="11"/>
+                                </Grid>
+                            </Border>
+                            <ControlTemplate.Triggers>
+                                <Trigger Property="IsMouseOver" Value="True">
+                                    <Setter TargetName="Bd" Property="BorderBrush" Value="{DynamicResource BrushBorderHov}"/>
+                                </Trigger>
+                                <Trigger Property="IsPressed" Value="True">
+                                    <Setter TargetName="Bd" Property="Background" Value="{DynamicResource BrushSelected}"/>
+                                </Trigger>
+                                <Trigger Property="IsEnabled" Value="False">
+                                    <Setter Property="Opacity" Value="0.35"/>
+                                </Trigger>
+                            </ControlTemplate.Triggers>
+                        </ControlTemplate>
+                    </Button.Template>
+                    </Button>
+                </Grid>
+
+            </StackPanel>
+        </Border>
+
+            </StackPanel>
+            </Border>
+
+        </Grid>
+    </Border>
+</Window>
